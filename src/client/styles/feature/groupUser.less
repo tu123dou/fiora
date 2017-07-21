@@ -1,0 +1,21 @@
+@import "../util.less";
+@import "~antd/lib/style/core/index.less";
+
+.component-group-user {
+    .layout(space-between, center);
+    padding: 0px 5px;
+    .avatar-name {
+        .layout(flex-start, center);
+        & > p {
+            margin-left: 8px;
+            font-size: 12px;
+        }
+    }
+    .icon-container {
+        height: 28px;
+        .flex-center();
+        & > svg, & > img {
+            margin-left: 4px;
+        }
+    }
+}

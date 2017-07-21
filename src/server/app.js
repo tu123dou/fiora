@@ -1,146 +1,79 @@
-const env = process.env.NODE_ENV;
-
-const config = require('../../config/project');
-const mongoose = require('mongoose');
-const promise = require('bluebird');
+const Koa = require('koa');
+const IO = require('koa-socket');
+const koaSend = require('koa-send');
+const koaStatic = require('koa-static');
 const path = require('path');
-const fs = require('fs');
-const koa = require('koa');
-const send = require('koa-send');
 
-const app = koa();
+const applyRoutes = require('./routes');
+const addMethods = require('./middlewares/addMethods');
+const log = require('./middlewares/log');
+const close = require('./middlewares/close');
+const notFound = require('./middlewares/notFound');
+const police = require('./middlewares/police');
+const catchError = require('./middlewares/catchError');
 
-// support socket.io
-const server = require('http').Server(app.callback());
-const io = require('socket.io')(server);
+const policeConfig = require('./polices/index');
 
-io.set('heartbeat interval', 60000);
-io.set('heartbeat timeout', 5000);
+const Socket = require('./models/socket');
 
-const router = require('./route/index');
+const app = new Koa();
 
-// use native Promise
-mongoose.Promise = global.Promise;
-
-// connect database
-mongoose.connect(env !== 'test' ? config.database : config.testDatabase, err => {
-    if (err) {
-        console.log('connect database error -->', err);
-        process.exit(1);
-    }
-    if (env === 'test') {
-        mongoose.connection.db.dropDatabase();
-    }
-    console.log('connect database success');
-    // clear old auth record
-    require('./model/auth').remove({}, () => {
-        console.log('remove all old auth');
-    });
-    // create default group
-    const Group = require('./model/group');
-
-    Group.find({ }, (findErr, groups) => {
-        if (groups.length === 0) {
-            const defaultGroup = new Group({
-                name: 'fiora',
-                announcement: '欢迎各位来到fiora',
-                isDefault: true,
-            });
-            defaultGroup.save((saveErr) => {
-                if (saveErr) {
-                    console.log('save default group get error ->', saveErr);
-                }
-                console.log('create default group success');
-            });
-        }
-
-        if (findErr) {
-            console.log('find default group get error ->', findErr);
-        }
-    });
-});
-
-// import all routers
-fs.readdir(`${__dirname}/route`, (err, result) => {
-    for (const file of result) {
-        if (file !== 'index.js') {
-            const routers = require(`./route/${file}`);
-            for (const routePath in routers) {
-                if (Object.hasOwnProperty.call(routers, routePath)) {
-                    router[routePath] = promise.coroutine(routers[routePath]);
-                }
-            }
-        }
-    }
-});
-
-// support request log
-if (env !== 'test') {
-    app.use(require('koa-logger')());
-}
-
-// mapping front end route to index file
-app.use(function* (next) {
-    // if request path is front route path
-    if (this.path.match(/\./) === null) {
-        yield send(
-            this,
+// 将前端路由指向 index.html
+app.use(async (ctx, next) => {
+    if (!/\./.test(ctx.request.url)) {
+        await koaSend(
+            ctx,
             'index.html',
             {
                 root: path.join(__dirname, '../../public'),
-                maxage: 1000 * 60 * 60 * 24,
+                maxage: 1000 * 60 * 60 * 24 * 7,
                 gzip: true,
-            }
+            } // eslint-disable-line
         );
-    }
-    else {
-        yield next;
+    } else {
+        await next();
     }
 });
 
-// support static file
-app.use(require('koa-static')(
-    path.join(__dirname, '../../public'), {
-        maxAge: 1000 * 60 * 60 * 24,
+
+// 静态文件访问
+app.use(koaStatic(
+    path.join(__dirname, '../../public'),
+    {
+        maxAge: 1000 * 60 * 60 * 24 * 7,
         gzip: true,
-    }
+    } // eslint-disable-line
 ));
 
-// error handle
-app.use(function* (next) {
-    try {
-        yield next;
-    }
-    catch (err) {
-        const message = err.message;
-        console.log('error --> ', message);
-    }
-});
+const io = new IO();
 
-// socket handle
-io.on('connection', socket => {
-    // console.log('new connection');
+// 注入应用
+io.attach(app);
 
-    socket.on('message', (data, cb) => {
-        router.handle(io, socket, data, cb);
+// 中间件
+io.use(catchError());
+io.use(close());
+io.use(log());
+io.use(addMethods(app.io, app._io));
+io.use(police(policeConfig));
+
+// 注册路由
+applyRoutes(io);
+
+// 必须放在 applyRoutes 后面
+io.use(notFound());
+
+app.io.on('connection', async (ctx) => {
+    await Socket.create({
+        socket: ctx.socket.id,
     });
-
-    socket.on('disconnect', () => {
-        // console.log('some one disconnect');
-        router.handle(io, socket, { method: 'DELETE', path: '/auth', data: { } }, () => { });
+});
+app.io.on('disconnect', async (ctx) => {
+    await Socket.remove({
+        socket: ctx.socket.id,
     });
 });
+// 不能去掉下面这行
+app.io.on('message', () => { });
 
-// start listener
-server.listen(env === 'production' ? config.port : config.devPort, () => {
-    console.log(`start server at http://localhost:${env === 'production' ? config.port : config.devPort}`);
-});
-
-// other error handle
-server.on('error', err => {
-    console.log('error --> ', err.message);
-    process.exit(1);
-});
-
-
-module.exports = server;
+module.exports = app;

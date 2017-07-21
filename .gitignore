@@ -3,6 +3,7 @@
 .vscode
 typings
 tsconfig.json
+jsconfig.json
 
 # node.js
 node_modules
@@ -21,10 +22,6 @@ coverage
 # qiniu
 qiniurc.json
 
-# config file
-project.js
-webpack.js
-
 # public
 public/
 
@@ -42,7 +39,6 @@ public/images/message
 
 # redux-devtools
 remotedev-db.sqlite3
-
 
 # react-native
 
@@ -87,3 +83,14 @@ buck-out/
 \.buckd/
 android/app/libs
 android/keystores/debug.keystore
+
+test.js
+
+# temp avatar file
+temp/
+
+# secret content
+*.secret.js
+
+dist/
+src/lib/

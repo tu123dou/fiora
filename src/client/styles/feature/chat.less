@@ -1,0 +1,133 @@
+@import "../util.less";
+@import "~antd/lib/style/color/colors.less";
+
+.feature-chat {
+    padding: 46px 80px 10px 80px;
+    .wrap {
+        .size(100%, 100%);
+        max-width: 1300px;
+        background-color: #fdfdfd;
+        padding: 0px;
+        box-shadow: 0px 0px 10px 0px #aaa;
+        margin: auto;
+    }
+    .sider {
+        background-color: #fdfdfd;
+        & > div {
+            height: 100%;
+        }
+        .ant-menu {
+            background-color: #fdfdfd;
+            border-right: 1px solid #d9d9d9;
+        }
+    }
+    .window {
+        background-color: #fdfdfd;
+        overflow: hidden;
+        position: relative;
+        .header {
+            background-color: #fdfdfd;
+            height: 46px;
+            .layout(space-between);
+            padding: 0px 15px;
+            .avatar-name {
+                .layout(undefined, center);
+                height: 46px;
+                .avatar {
+                    margin: 9px 0px;
+                }
+                .name {
+                    margin-left: 10px;
+                    font-size: 16px;
+                    font-weight: bold;
+                }
+            }
+            .button-group {
+                padding: 8px 0px;
+                & > button {
+                    margin-left: 10px;
+                }
+            }
+        }
+        .message-list {
+            flex: 1;
+            overflow: scroll;
+            & > h3 {
+                text-align: center;
+                margin-top: 30px;
+            }
+        }
+        .footer {
+            background-color: #fdfdfd;
+            min-height: min-content;
+            padding: 10px 30px 10px 30px;
+            .flex-center();
+            & > div {
+                flex: 1;
+                position: relative;
+                max-width: 600px;
+            }
+            .input {
+                padding: 10px;
+                resize: none;
+            }
+            .button-container {
+                .layout();
+                position: absolute;
+                right: 0;
+                top: 0;
+                height: 40px;
+                .flex-center;
+                padding-right: 6px;
+                .ant-btn {
+                    border: none;
+                    margin-right: 2px;
+                    &.ant-btn-clicked:after {
+                        border: none;
+                    }
+                }
+            }
+        }
+        .guest {
+            height: 40px;
+            & > h3 {
+                text-align: center;
+                line-height: 40px;
+            }
+        }
+    }
+    .user-list {
+        & > div {
+            width: 240px;
+            height: 100%;
+            background-color: #fbfbfb;
+            border-left: 1px solid #d9d9d9;
+            padding: 10px;
+            overflow: auto;
+            .title {
+                .layout(space-between, center);
+            }
+            .group-user-list {
+                padding-top: 6px;
+            }
+        }
+    }
+    .linkman-list {
+        height: 100%;
+        & > li {
+            height: 60px;
+            padding-left: 16px !important;
+        }
+    }
+    .no-select {
+        flex: 1;
+        .layout(center, center);
+        flex-direction: column;
+        & > img {
+            .size(200px, 200px);
+        }
+        & > h4 {
+            margin-top: 10px;
+        }
+    }
+}
